@@ -370,6 +370,11 @@ namespace instrumenta {
         if (tagSink != sinks.end() && tagSink->second) {
             tagSink->second->write(entry);
         }
+
+		// If the log level is ERROR_, throw an exception
+        if (level == E_LogLevel::ERROR_) {
+            throw LoggedRuntimeError(entry.toString(), logHistory);
+        }
     }
 
     void BaseLogger::registerSink(const std::string& tag, std::unique_ptr<ILogSink> sink) {
@@ -535,15 +540,15 @@ namespace instrumenta {
         return instance;
     }
 
-    void Instrumentation::registerLogger(const std::string& name, std::unique_ptr<ILogger> logger) {
+    void Instrumentation::registerLogger(const std::string& name, ILogger* logger) {
         std::lock_guard<std::mutex> lock(registryMutex);
-        loggerRegistry[name] = std::move(logger);
+        loggerRegistry[name] = logger;
     }
-
+    
     ILogger* Instrumentation::getLogger(const std::string& name) {
         std::lock_guard<std::mutex> lock(registryMutex);
         auto it = loggerRegistry.find(name);
-        return (it != loggerRegistry.end()) ? it->second.get() : nullptr;
+        return (it != loggerRegistry.end()) ? it->second : nullptr;
     }
 
     void Instrumentation::removeLogger(const std::string& name) {

@@ -119,15 +119,6 @@ namespace instrumenta {
         ILogger(ILogger&&) = delete;
         ILogger& operator=(ILogger&&) = delete;
 
-        // Core logging method
-        virtual void log(
-            E_LogLevel level,
-            const std::string& component,
-            const std::string& subComponent,
-            const std::string& message,
-            const std::vector<std::any>& args = {},
-            const std::string& tag = ""
-        ) = 0;
 
         // Template method for variadic args
         template<typename... Args>
@@ -162,6 +153,15 @@ namespace instrumenta {
 
     protected:
         ILogger() = default;
+        // Core logging method
+        virtual void log(
+            E_LogLevel level,
+            const std::string& component,
+            const std::string& subComponent,
+            const std::string& message,
+            const std::vector<std::any>& args = {},
+            const std::string& tag = ""
+        ) = 0;
     };
 
     // Concrete implementations
@@ -248,10 +248,6 @@ namespace instrumenta {
         static BaseLogger& getInstance();
         ~BaseLogger() override = default;
 
-        void log(E_LogLevel level, const std::string& component, const std::string& subComponent,
-            const std::string& message, const std::vector<std::any>& args = {},
-            const std::string& tag = "") override;
-
         void registerSink(const std::string& tag, std::unique_ptr<ILogSink> sink) override;
         void removeSink(const std::string& tag) override;
         ILogSink* getSink(const std::string& tag) override;
@@ -275,11 +271,14 @@ namespace instrumenta {
         static std::string getCurrentTimestamp();
         static std::vector<std::string> formatArgs(const std::vector<std::any>& args);
         TagConfig& getOrCreateTagConfig(const std::string& tag);
+        void log(E_LogLevel level, const std::string& component, const std::string& subComponent,
+            const std::string& message, const std::vector<std::any>& args = {},
+            const std::string& tag = "") override;
     };
 
     class INSTRUMENTA Instrumentation {
         static Instrumentation instance;
-        std::unordered_map<std::string, std::unique_ptr<ILogger>> loggerRegistry;
+        std::unordered_map<std::string, ILogger*> loggerRegistry;
         mutable std::mutex registryMutex;
 
         Instrumentation() = default;
@@ -292,7 +291,7 @@ namespace instrumenta {
         Instrumentation(Instrumentation&&) = delete;
         Instrumentation& operator=(Instrumentation&&) = delete;
 
-        void registerLogger(const std::string& name, std::unique_ptr<ILogger> logger);
+        void registerLogger(const std::string& name, ILogger* logger);
         ILogger* getLogger(const std::string& name);
         void removeLogger(const std::string& name);
         std::vector<std::string> getRegisteredLoggers() const;
@@ -312,16 +311,4 @@ namespace instrumenta {
             std::chrono::milliseconds flushInterval = std::chrono::milliseconds(1000));
     };
 
-    // Convenience macros for common logging operations
-#define LOG_DEBUG(component, subComponent, message, tag, ...) \
-        BaseLogger::getInstance().log(E_LogLevel::DEBUG, component, subComponent, message, tag, ##__VA_ARGS__)
-
-#define LOG_INFO(component, subComponent, message, tag, ...) \
-        BaseLogger::getInstance().log(E_LogLevel::INFO, component, subComponent, message, tag, ##__VA_ARGS__)
-
-#define LOG_WARNING(component, subComponent, message, tag, ...) \
-        BaseLogger::getInstance().log(E_LogLevel::WARNING, component, subComponent, message, tag, ##__VA_ARGS__)
-
-#define LOG_ERROR(component, subComponent, message, tag, ...) \
-        BaseLogger::getInstance().log(E_LogLevel::ERROR, component, subComponent, message, tag, ##__VA_ARGS__)
-}
+ }
