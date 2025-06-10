@@ -50,4 +50,18 @@ namespace instrumenta {
             std::chrono::milliseconds flushInterval = std::chrono::milliseconds(1000));
     };
 
+	static void INSTRUMENTA initializeInstrumentation() {
+		auto& orchestrator = Instrumentation::getInstance();
+		auto consoleSink = LogSinkFactory::createConsoleSink();
+		auto fileSink = LogSinkFactory::createFileSink("default_instrumentation_log.txt");
+
+		std::unique_ptr<TagRouter> consoleRouter = TagRouter::getInstance(CONSOLE_SINK_ROUTER_TAG);
+		std::unique_ptr<TagRouter> fileRouter = TagRouter::getInstance(FILE_SINK_ROUTER_TAG);
+		auto& defaultLogger = BaseLogger::getInstance();
+        defaultLogger.registerSink(GENERIC_CONSOLE_OUTPUT_TAG, std::move(consoleSink));
+		defaultLogger.registerSink(GENERIC_FILE_OUTPUT_TAG, std::move(fileSink));
+        defaultLogger.registerRouter(CONSOLE_SINK_ROUTER_TAG, std::move(consoleRouter));
+		defaultLogger.registerRouter(FILE_SINK_ROUTER_TAG, std::move(fileRouter));
+	}
+
 }

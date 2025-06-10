@@ -4,9 +4,9 @@
 
 namespace instrumenta {
     // LogEntry Implementation
-    LogEntry::LogEntry(std::string ts, E_LogLevel lvl, const std::string&& lib, const std::string&& comp,
-        const std::string&& subComp, const std::string&& msg, const std::vector<std::string>& args,
-        bool colored, const std::string&& logTag)
+    LogEntry::LogEntry(std::string ts, E_LogLevel lvl, const std::string& lib, const std::string& comp,
+        const std::string& subComp, const std::string& msg, const std::vector<std::string>& args,
+        bool colored, const std::string& logTag)
         : timestamp(std::move(ts)), level(lvl), libraryName(lib), component(comp),
         subComponent(subComp), message(msg), formattedArgs(args), isColored(colored), tag(logTag) {
     }

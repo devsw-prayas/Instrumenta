@@ -39,10 +39,10 @@ namespace instrumenta {
         bool isColored;
         std::string tag;
 
-        LogEntry(std::string ts, E_LogLevel lvl, const std::string&& lib, const std::string&& comp,
-            const std::string&& subComp, const std::string&& msg, const std::vector<std::string>& args,
-            bool colored, const std::string&& logTag = "");
-
+        LogEntry(std::string ts, E_LogLevel lvl, const std::string& lib, const std::string& comp,
+            const std::string& subComp, const std::string& msg, const std::vector<std::string>& args,
+            bool colored, const std::string& logTag = "");
+        
         [[nodiscard]] std::string toString() const;
         [[nodiscard]] std::string toColoredString() const;
 

@@ -97,6 +97,12 @@ namespace instrumenta {
         void setLibraryName(const std::string& name);
         void registerTag(std::string& tag, bool isEnabled, E_LogLevel minLevel, E_LogOutput outputDestinations) override;
 
+        // IRouterControl interface
+        void clearRouters() override;
+        ISinkRouter* getRouter(const std::string& routerTag) override;
+        void registerRouter(const std::string& routerTag, std::unique_ptr<ISinkRouter> router) override;
+        void removeRouter(const std::string& routerTag) override;
+
     private:
         static std::string getCurrentTimestamp();
         static std::vector<std::string> formatArgs(const std::vector<std::any>& args);
@@ -105,10 +111,6 @@ namespace instrumenta {
             const std::string& message, const std::vector<std::any>& args = {},
             const std::string& tag = "") override;
 
-        // IRouterControl interface
-        void clearRouters() override;
-        ISinkRouter* getRouter(const std::string& routerTag) override;
-        void registerRouter(const std::string& routerTag, std::unique_ptr<ISinkRouter> router) override;
-        void removeRouter(const std::string& routerTag) override;
+
     };
 }

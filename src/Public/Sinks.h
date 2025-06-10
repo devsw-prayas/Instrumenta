@@ -34,7 +34,7 @@ namespace instrumenta {
         ISinkRouter& operator=(const ISinkRouter&) = delete;
         ISinkRouter(ISinkRouter&&) = delete;
         ISinkRouter& operator=(ISinkRouter&&) = delete;
-        virtual bool route(const LogEntry& entry, std::unique_ptr<std::unordered_map<std::string, std::unique_ptr<ILogSink*> >>) = 0;
+        virtual bool route(const LogEntry& entry, std::weak_ptr<std::unordered_map<std::string, std::unique_ptr<ILogSink> >>) = 0;
 
     protected:
         ISinkRouter() = default;
@@ -132,12 +132,12 @@ namespace instrumenta {
         void flushWorker();
     };
 
-    class INSTRUMENTA DefaultRouter final : public ISinkRouter {
-        static DefaultRouter instance;
-        std::vector<std::string> tags;
+    class INSTRUMENTA TagRouter final : public ISinkRouter {
+		const std::string tag;
+    	TagRouter(const std::string& tag) : tag(tag){}
     public:
-        DefaultRouter& getInstance();
-        ~DefaultRouter() override = default;
-        bool route(const LogEntry& entry, std::unique_ptr<std::unordered_map<std::string, std::unique_ptr<ILogSink*>>>) override;
+		static std::unique_ptr<TagRouter> getInstance(const std::string& tag);
+		~TagRouter() override = default;
+		bool route(const LogEntry& entry, std::weak_ptr<std::unordered_map<std::string, std::unique_ptr<ILogSink>>>) override;
     };
 }
