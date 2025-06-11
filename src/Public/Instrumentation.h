@@ -62,6 +62,8 @@ namespace instrumenta {
 		defaultLogger.registerSink(GENERIC_FILE_OUTPUT_TAG, std::move(fileSink));
         defaultLogger.registerRouter(CONSOLE_SINK_ROUTER_TAG, std::move(consoleRouter));
 		defaultLogger.registerRouter(FILE_SINK_ROUTER_TAG, std::move(fileRouter));
+
+        isInstrumentationInitialized = true;
 	}
 
 }

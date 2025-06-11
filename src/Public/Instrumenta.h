@@ -26,3 +26,5 @@
 #ifndef BUFFERED_SINK_ROUTER_TAG
 #define BUFFERED_SINK_ROUTER_TAG "buffered_router"
 #endif
+
+inline bool isInstrumentationInitialized = false;
