@@ -6,17 +6,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Enable folders in IDEs like Visual Studio
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+file(GLOB_RECURSE STRATUM_PUBLIC "src/Public/*.h")
+file(GLOB_RECURSE STRATUM_PRIVATE "src/Private/*.cpp")
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/$<CONFIG>)
 
-project(Instrumenta)
-add_library(Instrumenta SHARED 
-    src/Private/Instrumenta.cpp src/Public/Instrumenta.h
-    src/Private/Instrumentation.cpp src/Public/Instrumentation.h
-    src/Private/Sinks.cpp src/Public/Sinks.h
-    src/Private/Logger.cpp src/Public/Logger.h
-    src/Private/LogUtils.cpp src/Public/LogUtils.h
-)
+project(Stratum)
+add_library(Stratum SHARED ${STRATUM_PUBLIC} ${STRATUM_PRIVATE})
 
-target_include_directories(Instrumenta PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Public
-)
+target_include_directories(Stratum PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/Public)
+target_precompile_headers(Stratum PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/Public/Stratum.h)
+
