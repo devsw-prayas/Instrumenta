@@ -3,6 +3,7 @@
 
 namespace Stratum::Traits {
 	ProfileRecord::ProfileRecord(ProfileRecord&& u_Other) noexcept {
+		m_Memory = nullptr;
 		switch (u_Other.m_Type) {
 			case RecordType::LOG:
 				::new(m_Memory) Tracing::LogEntry(std::move(*static_cast<Tracing::LogEntry*>(u_Other.m_Memory)));
@@ -18,10 +19,12 @@ namespace Stratum::Traits {
 		}
 		m_Type = u_Other.m_Type;
 		m_Init = u_Other.m_Init;
+		m_AlignOffset = u_Other.m_AlignOffset;
 
 	}
 
 	ProfileRecord::ProfileRecord(const ProfileRecord& ro_Other) {
+		m_Memory = nullptr;
 		switch (ro_Other.m_Type) {
 			case RecordType::LOG:
 				::new(m_Memory) Tracing::LogEntry(*static_cast<Tracing::LogEntry*>(ro_Other.m_Memory));
@@ -37,6 +40,7 @@ namespace Stratum::Traits {
 		}
 		m_Type = ro_Other.m_Type;
 		m_Init = ro_Other.m_Init;
+		m_AlignOffset = ro_Other.m_AlignOffset;
 	}
 
 	ProfileRecord& ProfileRecord::operator=(ProfileRecord&& u_Other) noexcept {
