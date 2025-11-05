@@ -18,6 +18,13 @@ namespace Stratum::Tracing {
 		Frame* m_Tail;
 		Allocator m_FrameAllocator;
 	public:
+
+		StackTrace(const StackTrace&) = delete;
+		StackTrace& operator=(const StackTrace&) = delete;
+
+		StackTrace(StackTrace&&) noexcept = delete;
+		StackTrace& operator=(StackTrace&&) noexcept = delete;
+
 		StackTrace() : m_Tail(nullptr), m_FrameAllocator() {
 			m_Sentinel = m_FrameAllocator.template allocate<Frame>(1);
 			m_Sentinel->m_NextFrame = nullptr;
@@ -49,7 +56,7 @@ namespace Stratum::Tracing {
 		}
 
 		template<typename T>
-		T popFrame() {
+		[[nodiscard]] T popFrame() {
 			if (!m_Sentinel->m_NextFrame) return T::s_Invalid;
 			Frame* frame = m_Sentinel->m_NextFrame;
 			T entry = frame->m_Frame.get<T>();
@@ -60,9 +67,31 @@ namespace Stratum::Tracing {
 			return entry;
 		}
 
-		Traits::RecordType peekFrame() const {
+		[[nodiscard]] Traits::RecordType peekFrame() const {
 			if (!m_Sentinel->m_NextFrame) return Traits::RecordType::NONE;
 			return m_Sentinel->m_NextFrame->m_Frame.kind();
 		}
+
+		~StackTrace() noexcept {
+			Frame* current = m_Sentinel;
+			while (current) {
+				Frame* next = current->m_NextFrame;
+
+				if (current != m_Sentinel)
+					m_FrameAllocator.destroy(&current->m_Frame);
+
+				// Deallocate every node including sentinel
+				m_FrameAllocator.deallocate(current);
+
+				current = next;
+			}
+
+			m_Sentinel = nullptr;
+			m_Tail = nullptr;
+		}
 	};
+}
+
+namespace Stratum::Tracing::this_tracer {
+	inline StackTrace<> trace;
 }

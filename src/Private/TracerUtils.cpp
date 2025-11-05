@@ -14,15 +14,13 @@ namespace Stratum::Tracing {
 		return m_Level;
 	}
 
-	const char* LogEntry::getMessage() const {
+	std::string LogEntry::getMessage() const {
 		return m_Message;
 	}
 
 	size_t LogEntry::getThreadID() const {
 		return m_ThreadID;
 	}
-
-	LogEntry LogEntry::s_Invalid{ LogLevel::CRASH, "NONE", "Stratum Tracing" };
 
 	std::chrono::steady_clock::time_point LogEntry::getTimestamp() const {
 		return m_Timestamp;
@@ -48,15 +46,13 @@ namespace Stratum::Tracing {
 		return m_Component;
 	}
 
-	const char* ExceptionProfile::getErrorMessage() const {
+	std::string ExceptionProfile::getErrorMessage() const {
 		return m_ErrorMessage;
 	}
 
 	std::source_location TracingProfile::getLocation() const {
 		return m_Location;
 	}
-
-	ExceptionProfile ExceptionProfile::s_Invalid{ "Stratum Tracing", "Invalid Exception Profile" };
 
 	void TracingProfile::endTrace() {
 		if (m_TraceStart) {
@@ -69,7 +65,7 @@ namespace Stratum::Tracing {
 		return m_Component;
 	}
 
-	const char* TracingProfile::getLabel() const {
+	std::string TracingProfile::getLabel() const {
 		return m_Label;
 	}
 
@@ -80,16 +76,16 @@ namespace Stratum::Tracing {
 	double TracingProfile::getTraceDuration(TracerPrecision v_Precision) const {
 		if (m_TraceComplete)
 			switch (v_Precision) {
-				case TracerPrecision::SECONDS:
-					return std::chrono::duration_cast<std::chrono::duration<double>>(m_End - m_Start).count();
-				case TracerPrecision::MILLISECONDS:
-					return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(m_End - m_Start).count();
-				case TracerPrecision::MICROSECONDS:
-					return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(m_End - m_Start).count();
-				case TracerPrecision::NANOSECONDS:
-					return std::chrono::duration_cast<std::chrono::duration<double, std::nano>> > (m_End - m_Start).count();
+			case TracerPrecision::SECONDS:
+				return std::chrono::duration_cast<std::chrono::duration<double>>(m_End - m_Start).count();
+			case TracerPrecision::MILLISECONDS:
+				return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(m_End - m_Start).count();
+			case TracerPrecision::MICROSECONDS:
+				return std::chrono::duration_cast<std::chrono::duration<double, std::micro>>(m_End - m_Start).count();
+			case TracerPrecision::NANOSECONDS:
+				return std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(m_End - m_Start).count();
 			}
-		return 0.f;
+		return 0.0;
 	}
 
 	void TracingProfile::startTrace() {
@@ -102,7 +98,6 @@ namespace Stratum::Tracing {
 		m_ThreadID = v_ID;
 	}
 
-	TracingProfile TracingProfile::s_Invalid{ "Stratum Tracing", "Invalid" };
 
 	void* LoggerProfile::getBuffer() const {
 		return m_Buffer;
@@ -126,7 +121,11 @@ namespace Stratum::Tracing {
 		return true;
 	}
 
-	const char* LoggerProfile::getName() const {
+	std::string LoggerProfile::getName() const {
 		return m_Name;
+	}
+
+	bool LoggerProfile::isEnabled() const {
+		return this->m_Enabled;
 	}
 }

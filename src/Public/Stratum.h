@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <chrono>
 #include <source_location>
-
+#include <unordered_map>
 
 #ifndef STRATUM
 #define STRATUM __declspec(dllexport)
@@ -24,4 +24,4 @@
 #define FILE_SINK_ROUTER_TAG "file_router"
 #endif
 
-inline bool isInstrumentationInitialized = false;
+inline static bool isInstrumentationInitialized = false;

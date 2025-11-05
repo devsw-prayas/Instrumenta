@@ -2,11 +2,11 @@
 #include "Stratum.h"
 
 namespace Stratum::Memory {
-	class MemoryAllocator final {
-
+	class STRATUM MemoryAllocator final {
+	public:
 		template<typename T>
 		T* allocate(size_t v_Elements) const {
-			return reinterpret_cast<T*>(malloc(sizeof(T) * v_Elements));
+			return static_cast<T*>(malloc(sizeof(T) * v_Elements));
 		}
 
 		void deallocate(void* p_Memory) const {
