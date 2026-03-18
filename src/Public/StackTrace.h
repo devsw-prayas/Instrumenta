@@ -1,97 +1,148 @@
 #pragma once
 #include "Stratum.h"
-#include "StratumMemory.h"
-#include "StratumTraits.h"
+#include "Records.h"
+#include "ProfilerTrace.h"
 
 namespace Stratum::Tracing {
-	using StackFrame = Traits::ProfileRecord;
 
-	struct Frame {
-		Frame* m_NextFrame;
-		StackFrame m_Frame;
-	};
+    
 
-	template<typename A = Memory::MemoryAllocator>
-	class STRATUM StackTrace final {
-		using Allocator = A;
-		Frame* m_Sentinel;
-		Frame* m_Tail;
-		Allocator m_FrameAllocator;
-	public:
+    using StackFrame = Profiler::ProfilerTrace;
 
-		StackTrace(const StackTrace&) = delete;
-		StackTrace& operator=(const StackTrace&) = delete;
+    
 
-		StackTrace(StackTrace&&) noexcept = delete;
-		StackTrace& operator=(StackTrace&&) noexcept = delete;
+    struct Frame {
+        Frame*      m_next  = nullptr;
+        StackFrame  m_frame{};
+    };
 
-		StackTrace() : m_Tail(nullptr), m_FrameAllocator() {
-			m_Sentinel = m_FrameAllocator.template allocate<Frame>(1);
-			m_Sentinel->m_NextFrame = nullptr;
-			m_Tail = m_Sentinel;
-		}
+    
 
-		bool pushFrame(const ExceptionProfile& ro_ExceptionProfile) {
-			m_Tail->m_NextFrame = m_FrameAllocator.template allocate<Frame>(1);
-			if (!m_Tail->m_NextFrame) return false;
-			m_Tail = m_Tail->m_NextFrame;
-			m_Tail->m_Frame.emplace(ro_ExceptionProfile);
-			return true;
-		}
+    struct STRATUM_API DefaultAllocator final {
+        template<typename T>
+        STRATUM_NODISCARD T* allocate(size_t v_Count) const noexcept {
+            return static_cast<T*>(std::malloc(sizeof(T) * v_Count));
+        }
 
-		bool pushFrame(const TracingProfile& ro_TraceProfile) {
-			m_Tail->m_NextFrame = m_FrameAllocator.template allocate<Frame>(1);
-			if (!m_Tail->m_NextFrame) return false;
-			m_Tail = m_Tail->m_NextFrame;
-			m_Tail->m_Frame.emplace(ro_TraceProfile);
-			return true;
-		}
+        void deallocate(void* p_Memory) const noexcept {
+            std::free(p_Memory);
+        }
 
-		bool pushFrame(const LogEntry& ro_LogEntry) {
-			m_Tail->m_NextFrame = m_FrameAllocator.template allocate<Frame>(1);
-			if (!m_Tail->m_NextFrame) return false;
-			m_Tail = m_Tail->m_NextFrame;
-			m_Tail->m_Frame.emplace(ro_LogEntry);
-			return true;
-		}
+        template<typename T>
+        void destroy(T* p_Object) const noexcept {
+            p_Object->~T();
+        }
+    };
 
-		template<typename T>
-		[[nodiscard]] T popFrame() {
-			if (!m_Sentinel->m_NextFrame) return T::s_Invalid;
-			Frame* frame = m_Sentinel->m_NextFrame;
-			T entry = frame->m_Frame.get<T>();
-			if (m_Tail == frame) m_Tail = m_Sentinel;
-			m_Sentinel->m_NextFrame = frame->m_NextFrame;
-			m_FrameAllocator.destroy(&frame->m_Frame);
-			m_FrameAllocator.deallocate(frame);
-			return entry;
-		}
+    
+    
+    
+    
 
-		[[nodiscard]] Traits::RecordType peekFrame() const {
-			if (!m_Sentinel->m_NextFrame) return Traits::RecordType::NONE;
-			return m_Sentinel->m_NextFrame->m_Frame.kind();
-		}
+    template<typename A = DefaultAllocator>
+    class StackTrace final {
+    private:
+        using Allocator = A;
 
-		~StackTrace() noexcept {
-			Frame* current = m_Sentinel;
-			while (current) {
-				Frame* next = current->m_NextFrame;
+        Frame*    m_sentinel = nullptr;
+        Frame*    m_tail     = nullptr;
+        Allocator m_allocator{};
 
-				if (current != m_Sentinel)
-					m_FrameAllocator.destroy(&current->m_Frame);
+    public:
+        StackTrace() {
+            m_sentinel = m_allocator.template allocate<Frame>(1);
+            STRATUM_ASSERT(m_sentinel != nullptr);
+            ::new(m_sentinel) Frame{};
+            m_tail = m_sentinel;
+        }
 
-				// Deallocate every node including sentinel
-				m_FrameAllocator.deallocate(current);
+        StackTrace(const StackTrace&)            = delete;
+        StackTrace& operator=(const StackTrace&) = delete;
+        StackTrace(StackTrace&&)                 = delete;
+        StackTrace& operator=(StackTrace&&)      = delete;
 
-				current = next;
-			}
+        
 
-			m_Sentinel = nullptr;
-			m_Tail = nullptr;
-		}
-	};
+        bool pushFrame(const Records::LogEntry& ro_Entry) noexcept {
+            Frame* node = m_allocator.template allocate<Frame>(1);
+            if (STRATUM_UNLIKELY(!node)) return false;
+            ::new(node) Frame{};
+            node->m_frame.emplace(ro_Entry);
+            m_tail->m_next = node;
+            m_tail = node;
+            return true;
+        }
+
+        bool pushFrame(const Records::ExceptionEntry& ro_Entry) noexcept {
+            Frame* node = m_allocator.template allocate<Frame>(1);
+            if (STRATUM_UNLIKELY(!node)) return false;
+            ::new(node) Frame{};
+            node->m_frame.emplace(ro_Entry);
+            m_tail->m_next = node;
+            m_tail = node;
+            return true;
+        }
+
+        bool pushFrame(const Records::TracerEntry& ro_Entry) noexcept {
+            Frame* node = m_allocator.template allocate<Frame>(1);
+            if (STRATUM_UNLIKELY(!node)) return false;
+            ::new(node) Frame{};
+            node->m_frame.emplace(ro_Entry);
+            m_tail->m_next = node;
+            m_tail = node;
+            return true;
+        }
+
+        
+
+        template<typename T>
+        STRATUM_NODISCARD T popFrame() noexcept {
+            if (STRATUM_UNLIKELY(!m_sentinel->m_next))
+                return T::s_invalid;
+
+            Frame* node  = m_sentinel->m_next;
+            T*     entry = node->m_frame.template get<T>();
+
+            STRATUM_ASSERT(entry != nullptr);
+            T result = *entry;
+
+            if (m_tail == node) m_tail = m_sentinel;
+            m_sentinel->m_next = node->m_next;
+
+            node->m_frame.destroy();
+            m_allocator.deallocate(node);
+            return result;
+        }
+
+        
+
+        STRATUM_NODISCARD Profiler::EntryKind peekFrame() const noexcept {
+            if (!m_sentinel->m_next) return Profiler::EntryKind::None;
+            return m_sentinel->m_next->m_frame.kind();
+        }
+
+        STRATUM_NODISCARD bool empty() const noexcept {
+            return m_sentinel->m_next == nullptr;
+        }
+
+        
+
+        ~StackTrace() noexcept {
+            Frame* current = m_sentinel;
+            while (current) {
+                Frame* next = current->m_next;
+                if (current != m_sentinel)
+                    current->m_frame.destroy();
+                m_allocator.deallocate(current);
+                current = next;
+            }
+            m_sentinel = nullptr;
+            m_tail     = nullptr;
+        }
+    };
+
 }
 
-namespace Stratum::Tracing::this_tracer {
-	inline StackTrace<> trace;
+namespace Stratum::Tracing::this_thread {
+    inline thread_local StackTrace<> t_Trace;
 }

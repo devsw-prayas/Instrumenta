@@ -1,100 +1,124 @@
 #pragma once
 #include "Stratum.h"
-#include "LogRoutes.h"
+#include "Logger.h"
 #include "StackTrace.h"
 
 namespace Stratum::Logging {
-	class STRATUM Orchestrator final {
-		std::unordered_map<std::string, Logger*> m_Loggers;
 
-	public:
-		static Orchestrator& getInstance() noexcept {
-			static Orchestrator s_Instance;
-			return s_Instance;
-		}
+    
+    
+    
+    
 
-		void registerLogger(Logger* p_Logger, const char* p_Code) noexcept {
-			if (!p_Logger || !p_Code) return;
-			m_Loggers.emplace(p_Code, p_Logger);
-		}
+    class STRATUM_API Orchestrator final {
+    private:
+        struct LoggerEntry {
+            char     name[LOGGER_NAME_MAX];
+            ILogger* logger;
+        };
 
-		void log(Tracing::LogLevel v_Level,
-			const char* p_Logger, const char* p_Component,
-			const char* p_Tag,
-			std::string&& u_Message,
-			const std::source_location& v_Location = std::source_location::current(),
-			bool v_ThreadTrace = false) noexcept {
-			auto it = m_Loggers.find(p_Logger);												  
-			if (it == m_Loggers.end()) return;
+        LoggerEntry m_loggers[MAX_LOGGERS];
+        size_t      m_loggerCount;
 
-			Logger* pLogger = it->second;
-			if (!pLogger) return;
+        Orchestrator() noexcept : m_loggers{}, m_loggerCount(0) {}
 
-			Tracing::LogEntry entry{ v_Level, p_Component, std::move(u_Message), v_Location };
-			pLogger->log(p_Tag, entry);
+        STRATUM_NODISCARD ILogger* findLogger(const char* p_Name) noexcept {
+            for (size_t i = 0; i < m_loggerCount; ++i)
+                if (std::strncmp(m_loggers[i].name, p_Name, LOGGER_NAME_MAX) == 0)
+                    return m_loggers[i].logger;
+            return nullptr;
+        }
 
-			if (v_ThreadTrace)
-				Tracing::this_tracer::trace.pushFrame(entry);
-		}
+    public:
+        Orchestrator(const Orchestrator&)            = delete;
+        Orchestrator& operator=(const Orchestrator&) = delete;
+        Orchestrator(Orchestrator&&)                 = delete;
+        Orchestrator& operator=(Orchestrator&&)      = delete;
 
-		void trace(const char* p_Logger,
-				   const char* p_Tag,
-				   const Tracing::TracingProfile& ro_Trace,
-				   bool v_ThreadTrace = false) noexcept {
-			auto it = m_Loggers.find(p_Logger);
-			if (it == m_Loggers.end()) return;
+        STRATUM_NODISCARD static Orchestrator& getInstance() noexcept {
+            static Orchestrator s_instance;
+            return s_instance;
+        }
 
-			Logger* pLogger = it->second;
-			if (!pLogger) return;
+        
 
-			pLogger->log(p_Tag, ro_Trace);
+        bool registerLogger(const char* p_Name, ILogger* po_Logger) noexcept {
+            if (!p_Name || !po_Logger || m_loggerCount >= MAX_LOGGERS) return false;
+            std::strncpy(m_loggers[m_loggerCount].name, p_Name, LOGGER_NAME_MAX - 1);
+            m_loggers[m_loggerCount].name[LOGGER_NAME_MAX - 1] = '\0';
+            m_loggers[m_loggerCount].logger = po_Logger;
+            ++m_loggerCount;
+            return true;
+        }
 
-			if (v_ThreadTrace)
-				Tracing::this_tracer::trace.pushFrame(ro_Trace);
-		}
+        void log(
+            Records::LogLevel           v_Level,
+            const char*                 p_LoggerName,
+            const char*                 p_Component,
+            const char*                 p_Tag,
+            const char*                 p_Message,
+            const std::source_location& ro_Location   = std::source_location::current(),
+            bool                        v_ThreadTrace = false
+        ) noexcept {
+            ILogger* p_logger = findLogger(p_LoggerName);
+            if (STRATUM_UNLIKELY(!p_logger)) return;
 
-		void exception(const char* p_Logger,
-					   const char* p_Tag,
-					   const Tracing::ExceptionProfile& ro_Exception,
-					   bool v_ThreadTrace = true) noexcept {
-			auto it = m_Loggers.find(p_Logger);
-			if (it == m_Loggers.end()) return;
+            Records::LogEntry entry{ v_Level, p_Component, p_Message, ro_Location };
+            p_logger->onLog(p_Tag, entry);
 
-			Logger* pLogger = it->second;
-			if (!pLogger) return;
+            if (v_ThreadTrace)
+                Tracing::this_thread::t_Trace.pushFrame(entry);
+        }
 
-			pLogger->log(p_Tag, ro_Exception);
+        void trace(
+            const char*                   p_LoggerName,
+            const char*                   p_Tag,
+            const Records::TracerEntry&   ro_Trace,
+            bool                          v_ThreadTrace = false
+        ) noexcept {
+            ILogger* p_logger = findLogger(p_LoggerName);
+            if (STRATUM_UNLIKELY(!p_logger)) return;
 
-			if (v_ThreadTrace)
-				Tracing::this_tracer::trace.pushFrame(ro_Exception);
-		}
+            p_logger->onLog(p_Tag, ro_Trace);
 
-		void crash(const char* p_Logger,
-				   const char* p_Component,
-				   const char* p_Tag,
-				   const char* p_Message,
-				   const std::source_location& v_Location = std::source_location::current(),
-				   bool v_ThreadTrace = true) noexcept {
-			auto it = m_Loggers.find(p_Logger);
-			if (it == m_Loggers.end()) return;
+            if (v_ThreadTrace)
+                Tracing::this_thread::t_Trace.pushFrame(ro_Trace);
+        }
 
-			Logger* pLogger = it->second;
-			if (!pLogger) return;
+        void exception(
+            const char*                      p_LoggerName,
+            const char*                      p_Tag,
+            const Records::ExceptionEntry&   ro_Exception,
+            bool                             v_ThreadTrace = true
+        ) noexcept {
+            ILogger* p_logger = findLogger(p_LoggerName);
+            if (STRATUM_UNLIKELY(!p_logger)) return;
 
-			Tracing::LogEntry entry{ Tracing::LogLevel::CRASH, p_Component, p_Message, v_Location };
-			pLogger->log(p_Tag, entry);
+            p_logger->onLog(p_Tag, ro_Exception);
 
-			if (v_ThreadTrace)
-				Tracing::this_tracer::trace.pushFrame(entry);
-		}
+            if (v_ThreadTrace)
+                Tracing::this_thread::t_Trace.pushFrame(ro_Exception);
+        }
 
-		// Only flush triggers actual emission inside loggers
-		void flush() noexcept {
-			for (auto& [code, logger] : m_Loggers) {
-				if (logger) {
-					logger->flush();
-				}
-			}
-		}
-	};
+        void crash(
+            const char*                 p_LoggerName,
+            const char*                 p_Component,
+            const char*                 p_Tag,
+            const char*                 p_Message,
+            const std::source_location& ro_Location = std::source_location::current()
+        ) noexcept {
+            ILogger* p_logger = findLogger(p_LoggerName);
+            if (STRATUM_UNLIKELY(!p_logger)) return;
+
+            Records::LogEntry entry{ Records::LogLevel::Crash, p_Component, p_Message, ro_Location };
+            p_logger->onLog(p_Tag, entry);
+            Tracing::this_thread::t_Trace.pushFrame(entry);
+        }
+
+        void flush() noexcept {
+            for (size_t i = 0; i < m_loggerCount; ++i)
+                m_loggers[i].logger->flush();
+        }
+    };
+
 }

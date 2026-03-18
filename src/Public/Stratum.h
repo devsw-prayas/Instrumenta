@@ -1,27 +1,56 @@
 #pragma once
+
+#if defined(_MSC_VER) && !defined(_ENABLE_EXTENDED_ALIGNED_STORAGE)
+    #define _ENABLE_EXTENDED_ALIGNED_STORAGE
+#endif
+
+#ifndef STRATUM_API
+    #if defined(_WIN32) || defined(__CYGWIN__)
+        #if defined(STRATUM_SHARED)
+            #define STRATUM_API __declspec(dllexport)
+        #else
+            #define STRATUM_API __declspec(dllimport)
+        #endif
+    #elif defined(__GNUC__) || defined(__clang__)
+        #define STRATUM_API __attribute__((visibility("default")))
+    #else
+        #define STRATUM_API
+    #endif
+#endif
+
 #include <cstdint>
+#include <cstddef>
+#include <cstring>
 #include <chrono>
 #include <source_location>
-#include <unordered_map>
+#include <type_traits>
+#include <concepts>
+#include <array>
+#include <string_view>
+#include <utility>
 
-#ifndef STRATUM
-#define STRATUM __declspec(dllexport)
+#include "StratumDiagnostics.h"
+
+namespace Stratum {
+
+    constexpr size_t COMPONENT_NAME_MAX = 64;
+    constexpr size_t MESSAGE_MAX        = 256;
+    constexpr size_t LABEL_MAX          = 128;
+    constexpr size_t LOGGER_NAME_MAX    = 64;
+    constexpr size_t TAG_MAX            = 64;
+    constexpr size_t MAX_ROUTES         = 16;
+    constexpr size_t MAX_LOGGERS        = 32;
+
+}
+
+#ifndef STRATUM_TAG_CONSOLE
+    #define STRATUM_TAG_CONSOLE "console"
 #endif
 
-#ifndef GENERIC_CONSOLE_OUTPUT_TAG
-#define GENERIC_CONSOLE_OUTPUT_TAG "console"
+#ifndef STRATUM_TAG_FILE
+    #define STRATUM_TAG_FILE "file"
 #endif
 
-#ifndef GENERIC_FILE_OUTPUT_TAG
-#define GENERIC_FILE_OUTPUT_TAG "file"
-#endif
-
-#ifndef CONSOLE_SINK_ROUTER_TAG
-#define CONSOLE_SINK_ROUTER_TAG "console_router"
-#endif
-
-#ifndef FILE_SINK_ROUTER_TAG
-#define FILE_SINK_ROUTER_TAG "file_router"
-#endif
-
-inline static bool isInstrumentationInitialized = false;
+namespace Stratum {
+    inline bool g_InstrumentationInitialized = false;
+}
