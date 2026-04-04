@@ -25,12 +25,12 @@ namespace Stratum::Records {
 
     struct STRATUM_API STRATUM_ALIGNAS(128) LogEntry final {
     private:
-        LogLevel             m_level;
         char                 m_component[COMPONENT_NAME_MAX];
         char                 m_message[MESSAGE_MAX];
         uint64_t             m_timestamp;
         std::source_location m_location;
         uint64_t             m_threadId;
+        LogLevel             m_level;
 
     public:
         LogEntry(
@@ -49,7 +49,6 @@ namespace Stratum::Records {
 
         void setThreadId(uint64_t v_Id) noexcept;
 
-        static const LogEntry s_invalid;
     };
 
     struct STRATUM_API STRATUM_ALIGNAS(128) ExceptionEntry final {
@@ -75,7 +74,6 @@ namespace Stratum::Records {
 
         void setThreadId(uint64_t v_Id) noexcept;
 
-        static const ExceptionEntry s_invalid;
     };
 
     struct STRATUM_API STRATUM_ALIGNAS(128) TracerEntry final {
@@ -110,7 +108,6 @@ namespace Stratum::Records {
         void start()                    noexcept;
         void end()                      noexcept;
 
-        static const TracerEntry s_invalid;
     };
 
     struct STRATUM_API LoggerProfile final {
@@ -137,6 +134,12 @@ namespace Stratum::Records {
         void enable()                        noexcept;
         void disable()                       noexcept;
         bool setPolicy(TracePolicy v_Policy) noexcept;
+    };
+
+    struct InvalidEntries final {
+        static inline const LogEntry       s_log{       LogLevel::Crash, "NONE", "Invalid LogEntry",       std::source_location{} };
+        static inline const ExceptionEntry s_exception{ "NONE",          "Invalid ExceptionEntry",          std::source_location{} };
+        static inline const TracerEntry    s_tracer{    "NONE",          "Invalid TracerEntry",             std::source_location{} };
     };
 
 }

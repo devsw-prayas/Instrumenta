@@ -3,13 +3,6 @@
 #include "Records.h"
 
 namespace Stratum::Logging {
-
-    
-    
-    
-    
-    
-
     class STRATUM_API ISink {
     public:
         virtual void sink(std::string_view v_Payload) = 0;
@@ -21,12 +14,6 @@ namespace Stratum::Logging {
         ISink(ISink&&)            noexcept   = default;
         ISink& operator=(ISink&&) noexcept   = default;
     };
-
-    
-    
-    
-    
-    
 
     class STRATUM_API ISinkRouter {
     public:
@@ -41,5 +28,4 @@ namespace Stratum::Logging {
         ISinkRouter(ISinkRouter&&)            noexcept   = default;
         ISinkRouter& operator=(ISinkRouter&&) noexcept   = default;
     };
-
 }
