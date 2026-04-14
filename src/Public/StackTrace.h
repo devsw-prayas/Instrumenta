@@ -11,7 +11,7 @@ namespace Stratum::Tracing {
 		StackFrame  m_frame{};
 	};
 
-	struct STRATUM_API DefaultAllocator final {
+	struct DefaultAllocator final {
 		template<typename T>
 		STRATUM_NODISCARD T* allocate(size_t v_Count) const noexcept {
 			return static_cast<T*>(std::malloc(sizeof(T) * v_Count));

@@ -31,12 +31,14 @@
 
 #define STRATUM_INLINE inline
 
+#ifndef STRATUM_API
 #if STRATUM_COMPILER_MSVC
     #define STRATUM_API __declspec(dllexport)
 #elif STRATUM_COMPILER_CLANG || STRATUM_COMPILER_GCC
     #define STRATUM_API __attribute__((visibility("default")))
 #else
     #define STRATUM_API
+#endif
 #endif
 
 #if STRATUM_COMPILER_MSVC
