@@ -99,14 +99,21 @@
     #define STRATUM_PRAGMA(x)
 #endif
 
-#define STRATUM_DIAGNOSTIC_PUSH STRATUM_PRAGMA(diagnostic push)
-#define STRATUM_DIAGNOSTIC_POP  STRATUM_PRAGMA(diagnostic pop)
-
 #if STRATUM_COMPILER_MSVC
+    #define STRATUM_DIAGNOSTIC_PUSH    STRATUM_PRAGMA(warning(push))
+    #define STRATUM_DIAGNOSTIC_POP     STRATUM_PRAGMA(warning(pop))
     #define STRATUM_DISABLE_WARNING(w) STRATUM_PRAGMA(warning(disable : w))
-#elif STRATUM_COMPILER_CLANG || STRATUM_COMPILER_GCC
+#elif STRATUM_COMPILER_CLANG
+    #define STRATUM_DIAGNOSTIC_PUSH    STRATUM_PRAGMA(clang diagnostic push)
+    #define STRATUM_DIAGNOSTIC_POP     STRATUM_PRAGMA(clang diagnostic pop)
     #define STRATUM_DISABLE_WARNING(w) STRATUM_PRAGMA(clang diagnostic ignored w)
+#elif STRATUM_COMPILER_GCC
+    #define STRATUM_DIAGNOSTIC_PUSH    STRATUM_PRAGMA(GCC diagnostic push)
+    #define STRATUM_DIAGNOSTIC_POP     STRATUM_PRAGMA(GCC diagnostic pop)
+    #define STRATUM_DISABLE_WARNING(w) STRATUM_PRAGMA(GCC diagnostic ignored w)
 #else
+    #define STRATUM_DIAGNOSTIC_PUSH
+    #define STRATUM_DIAGNOSTIC_POP
     #define STRATUM_DISABLE_WARNING(w)
 #endif
 
